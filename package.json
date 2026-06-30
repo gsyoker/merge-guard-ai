@@ -1,0 +1,19 @@
+{
+  "name": "merge-guard-ai",
+  "version": "0.1.0",
+  "description": "AI-era merge safety CLI: conflict context extraction, feature impact hints, and agent-ready reports.",
+  "type": "module",
+  "bin": {
+    "merge-guard": "./bin/merge-guard.mjs"
+  },
+  "scripts": {
+    "analyze": "node ./bin/merge-guard.mjs analyze",
+    "check": "node ./bin/merge-guard.mjs analyze --fail-on high",
+    "demo": "node ./bin/merge-guard.mjs analyze --files examples/login-conflict.tsx"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
