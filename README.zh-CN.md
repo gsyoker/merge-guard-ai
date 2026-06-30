@@ -39,13 +39,30 @@ node ./bin/merge-guard.mjs analyze --files src/pages/Login.tsx src/api/auth.ts
 node ./bin/merge-guard.mjs analyze --json
 ```
 
-用确定性策略解决冲突：
+预览冲突解决方案。默认只预览，不会修改文件：
 
 ```bash
-node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_ours
-node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_theirs
 node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
 ```
+
+确认方案后再真正写入文件：
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended --apply
+```
+
+写入前会自动备份原文件。如果发现合并不对，可以恢复最近一次备份：
+
+```bash
+node ./bin/merge-guard.mjs rollback
+```
+
+可用的确定性策略：
+
+- `recommended`：尽量保留双方功能意图
+- `keep_ours`：保留当前分支
+- `keep_theirs`：保留传入分支
+- `agent`：不改文件，生成给当前 Coding Agent 使用的上下文提示
 
 如果希望直接使用当前 Coding Agent 的模型，可以生成一份 Agent 交接提示：
 
@@ -142,7 +159,7 @@ node ./bin/merge-guard.mjs analyze --json
 
 短期目标：
 
-- 支持 `resolve` 命令，根据用户选择生成 patch
+- 增强 `resolve` 的自动合并策略和交互式选择
 - 增强 TypeScript / React / Vue 项目的上下文识别
 - 增加 GitHub Action / PR comment 输出
 - 提供 MCP tool API

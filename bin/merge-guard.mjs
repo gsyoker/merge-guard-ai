@@ -4,6 +4,8 @@ import { analyze } from "../src/analyzer.mjs";
 import { installHooks } from "../src/hooks.mjs";
 import { renderHumanReport } from "../src/report.mjs";
 import { renderResolveReport, resolve } from "../src/resolver.mjs";
+import { findGitRoot } from "../src/git.mjs";
+import { rollbackBackup } from "../src/backup.mjs";
 
 const args = process.argv.slice(2);
 const command = args[0] || "analyze";
@@ -59,12 +61,25 @@ async function main() {
     const result = await resolve({
       files: readListAfter("--files"),
       strategy: readValueAfter("--strategy", "agent"),
+      apply: hasFlag("--apply"),
     });
 
     if (hasFlag("--json")) {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(renderResolveReport(result));
+    }
+    return;
+  }
+
+  if (command === "rollback") {
+    const root = await findGitRoot(process.cwd());
+    const result = await rollbackBackup(root, readValueAfter("--session", "latest"));
+    if (hasFlag("--json")) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`Restored backup ${result.sessionId}`);
+      for (const file of result.restored) console.log(`- ${file}`);
     }
     return;
   }
@@ -90,13 +105,16 @@ function printHelp() {
 
 Usage:
   merge-guard analyze [--files <file...>] [--json] [--fail-on low|medium|high]
-  merge-guard resolve [--files <file...>] [--strategy keep_ours|keep_theirs|recommended|agent] [--json]
+  merge-guard resolve [--files <file...>] [--strategy keep_ours|keep_theirs|recommended|agent] [--apply] [--json]
+  merge-guard rollback [--session <id>] [--json]
   merge-guard install-hooks
 
 Examples:
   node ./bin/merge-guard.mjs analyze
   node ./bin/merge-guard.mjs analyze --files src/pages/Login.tsx --json
-  node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_ours
+  node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
+  node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended --apply
+  node ./bin/merge-guard.mjs rollback
   node ./bin/merge-guard.mjs resolve --strategy agent
   node ./bin/merge-guard.mjs install-hooks
 `);

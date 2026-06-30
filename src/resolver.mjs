@@ -5,6 +5,7 @@ import { parseConflictBlocks } from "./conflict-parser.mjs";
 import { extractAstContext } from "./ast-context.mjs";
 import { inferFeatureImpact, scoreRisk } from "./feature-heuristics.mjs";
 import { buildMergeOptions } from "./merge-options.mjs";
+import { createBackup } from "./backup.mjs";
 
 const STRATEGIES = new Set(["keep_ours", "keep_theirs", "recommended", "agent"]);
 
@@ -17,10 +18,14 @@ export async function resolve(options = {}) {
   const root = await findGitRoot(process.cwd());
   const files = options.files?.length ? options.files : await listConflictedFiles(root);
   const results = [];
+  const pendingWrites = [];
 
   for (const file of files) {
     const absolutePath = path.isAbsolute(file) ? file : path.join(root, file);
     const relativePath = path.relative(root, absolutePath);
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      throw new Error(`File is outside the repository: ${file}`);
+    }
     const source = await fs.readFile(absolutePath, "utf8");
     const blocks = parseConflictBlocks(source);
 
@@ -49,17 +54,38 @@ export async function resolve(options = {}) {
     }
 
     const resolvedSource = applyResolution(source, enriched, strategy);
-    if (resolvedSource !== source) {
-      await fs.writeFile(absolutePath, resolvedSource, "utf8");
+    const changed = resolvedSource !== source;
+    if (changed) {
+      pendingWrites.push({
+        absolutePath,
+        relativePath,
+        source,
+        resolvedSource,
+      });
     }
 
     results.push({
       file: relativePath,
-      changed: resolvedSource !== source,
+      changed,
+      applied: false,
       strategy,
       resolvedBlocks: enriched.length,
       risks: enriched.map((item) => item.risk.level),
+      previewPatch: buildPreviewPatch(relativePath, source, enriched, strategy),
     });
+  }
+
+  let backup = null;
+  if (options.apply && pendingWrites.length) {
+    backup = await createBackup(root, pendingWrites);
+    for (const item of pendingWrites) {
+      await fs.writeFile(item.absolutePath, item.resolvedSource, "utf8");
+    }
+
+    const changedSet = new Set(pendingWrites.map((item) => item.relativePath));
+    for (const item of results) {
+      if (changedSet.has(item.file)) item.applied = true;
+    }
   }
 
   return {
@@ -67,6 +93,8 @@ export async function resolve(options = {}) {
     generatedAt: new Date().toISOString(),
     root,
     strategy,
+    mode: options.apply ? "apply" : "preview",
+    backup,
     changedFiles: results.filter((item) => item.changed).map((item) => item.file),
     results,
   };
@@ -107,6 +135,24 @@ function resolutionText(item, strategy) {
     "    // MERGE-GUARD: kept incoming intent as well. Ask your coding agent to simplify this block if needed.",
     item.block.theirs,
   ].join("\n");
+}
+
+function buildPreviewPatch(file, source, enrichedBlocks, strategy) {
+  const lines = source.split(/\r?\n/);
+  const chunks = [];
+
+  for (const item of enrichedBlocks) {
+    const original = lines.slice(item.block.startIndex, item.block.endIndex + 1);
+    const resolved = resolutionText(item, strategy).split("\n");
+
+    chunks.push([
+      `@@ ${file}:${item.block.startLine}-${item.block.endLine} @@`,
+      ...original.map((line) => `- ${line}`),
+      ...resolved.map((line) => `+ ${line}`),
+    ].join("\n"));
+  }
+
+  return chunks.join("\n");
 }
 
 function mergeSharedReturnFallback(ours, theirs) {
@@ -194,7 +240,11 @@ export function renderResolveReport(result) {
   lines.push("Merge Guard AI Resolve Report");
   lines.push("");
   lines.push(`Strategy: ${result.strategy}`);
+  lines.push(`Mode: ${result.mode}`);
   lines.push(`Changed files: ${result.changedFiles.length}`);
+  if (result.backup) {
+    lines.push(`Backup: ${result.backup.sessionId} (${result.backup.path})`);
+  }
   lines.push("");
 
   for (const item of result.results) {
@@ -203,9 +253,19 @@ export function renderResolveReport(result) {
       lines.push("  Generated agent prompt. No files were changed.");
     } else {
       lines.push(`  Changed: ${item.changed ? "yes" : "no"}`);
+      lines.push(`  Applied: ${item.applied ? "yes" : "no"}`);
       lines.push(`  Resolved blocks: ${item.resolvedBlocks || 0}`);
       if (item.risks?.length) lines.push(`  Risks: ${item.risks.join(", ")}`);
+      if (item.previewPatch && result.mode === "preview") {
+        lines.push("  Preview patch:");
+        lines.push(indent(item.previewPatch, "    "));
+      }
     }
+  }
+
+  if (result.mode === "preview" && result.strategy !== "agent") {
+    lines.push("");
+    lines.push("Preview only. Re-run with --apply to write files.");
   }
 
   if (result.strategy === "agent") {
@@ -215,4 +275,8 @@ export function renderResolveReport(result) {
   }
 
   return lines.join("\n");
+}
+
+function indent(text, prefix) {
+  return text.split("\n").map((line) => `${prefix}${line}`).join("\n");
 }

@@ -39,13 +39,30 @@ Emit JSON for another agent or MCP wrapper:
 node ./bin/merge-guard.mjs analyze --json
 ```
 
-Resolve conflicts with a deterministic strategy:
+Preview a deterministic resolution. By default this only prints a patch preview and does not modify files:
 
 ```bash
-node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_ours
-node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_theirs
 node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
 ```
+
+Apply the previewed resolution:
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended --apply
+```
+
+Merge Guard creates a backup before writing files. Roll back the latest applied resolution:
+
+```bash
+node ./bin/merge-guard.mjs rollback
+```
+
+Available strategies:
+
+- `recommended`: keep both functional intents when the heuristic can do so
+- `keep_ours`: keep the current branch side
+- `keep_theirs`: keep the incoming branch side
+- `agent`: generate a prompt for the user's current coding agent and change no files
 
 Use the current coding agent's model by generating an agent handoff prompt:
 

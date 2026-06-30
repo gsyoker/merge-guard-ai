@@ -9,7 +9,8 @@
   "scripts": {
     "analyze": "node ./bin/merge-guard.mjs analyze",
     "check": "node ./bin/merge-guard.mjs analyze --fail-on high",
-    "demo": "node ./bin/merge-guard.mjs analyze --files examples/login-conflict.tsx"
+    "demo": "node ./bin/merge-guard.mjs analyze --files examples/login-conflict.tsx",
+    "demo:resolve": "node ./bin/merge-guard.mjs resolve --files examples/login-conflict.tsx --strategy recommended"
   },
   "dependencies": {},
   "engines": {
