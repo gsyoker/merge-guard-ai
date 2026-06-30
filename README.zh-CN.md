@@ -39,6 +39,22 @@ node ./bin/merge-guard.mjs analyze --files src/pages/Login.tsx src/api/auth.ts
 node ./bin/merge-guard.mjs analyze --json
 ```
 
+用确定性策略解决冲突：
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_ours
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_theirs
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
+```
+
+如果希望直接使用当前 Coding Agent 的模型，可以生成一份 Agent 交接提示：
+
+```bash
+node ./bin/merge-guard.mjs resolve --strategy agent
+```
+
+这种模式不会内置调用任何模型，而是把冲突上下文、功能影响、风险和双方代码整理好，交给用户当前正在使用的 Codex、Claude Code、Cursor 等 Agent 继续生成更智能的 patch。
+
 安装本地 Git hooks：
 
 ```bash

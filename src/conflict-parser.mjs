@@ -38,6 +38,8 @@ export function parseConflictBlocks(source) {
     blocks.push({
       startLine,
       endLine,
+      startIndex: startLine - 1,
+      endIndex: endLine - 1,
       oursLabel,
       theirsLabel,
       hasBase: base.length > 0,

@@ -39,6 +39,20 @@ Emit JSON for another agent or MCP wrapper:
 node ./bin/merge-guard.mjs analyze --json
 ```
 
+Resolve conflicts with a deterministic strategy:
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_ours
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy keep_theirs
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
+```
+
+Use the current coding agent's model by generating an agent handoff prompt:
+
+```bash
+node ./bin/merge-guard.mjs resolve --strategy agent
+```
+
 Install local Git hooks:
 
 ```bash
