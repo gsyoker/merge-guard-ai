@@ -1,5 +1,7 @@
 # Merge Guard AI
 
+[中文文档](./README.zh-CN.md)
+
 Merge Guard AI is a local-first prototype for an AI Coding merge safety layer.
 
 It does not try to replace Codex, Claude Code, Cursor, or other coding agents. Instead, it gives those agents a structured merge analysis tool:
