@@ -45,6 +45,14 @@ Preview a deterministic resolution. By default this only prints a patch preview 
 node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
 ```
 
+Use the guided interactive flow:
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --interactive
+```
+
+It explains the impact and risk, asks the user to choose a strategy, previews the patch, and asks again before writing files.
+
 Apply the previewed resolution:
 
 ```bash

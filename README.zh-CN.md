@@ -45,6 +45,14 @@ node ./bin/merge-guard.mjs analyze --json
 node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
 ```
 
+如果希望一步步选择，可以使用交互式模式：
+
+```bash
+node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --interactive
+```
+
+它会先展示冲突影响、风险和可选方案，再让你选择合并策略，最后二次确认是否写入文件。
+
 确认方案后再真正写入文件：
 
 ```bash

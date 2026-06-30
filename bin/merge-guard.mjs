@@ -6,6 +6,7 @@ import { renderHumanReport } from "../src/report.mjs";
 import { renderResolveReport, resolve } from "../src/resolver.mjs";
 import { findGitRoot } from "../src/git.mjs";
 import { rollbackBackup } from "../src/backup.mjs";
+import { runInteractiveResolve } from "../src/interactive.mjs";
 
 const args = process.argv.slice(2);
 const command = args[0] || "analyze";
@@ -58,6 +59,11 @@ async function main() {
   }
 
   if (command === "resolve") {
+    if (hasFlag("--interactive")) {
+      await runInteractiveResolve({ files: readListAfter("--files") });
+      return;
+    }
+
     const result = await resolve({
       files: readListAfter("--files"),
       strategy: readValueAfter("--strategy", "agent"),
@@ -105,6 +111,7 @@ function printHelp() {
 
 Usage:
   merge-guard analyze [--files <file...>] [--json] [--fail-on low|medium|high]
+  merge-guard resolve [--files <file...>] [--interactive]
   merge-guard resolve [--files <file...>] [--strategy keep_ours|keep_theirs|recommended|agent] [--apply] [--json]
   merge-guard rollback [--session <id>] [--json]
   merge-guard install-hooks
@@ -112,6 +119,7 @@ Usage:
 Examples:
   node ./bin/merge-guard.mjs analyze
   node ./bin/merge-guard.mjs analyze --files src/pages/Login.tsx --json
+  node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --interactive
   node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended
   node ./bin/merge-guard.mjs resolve --files src/pages/Login.tsx --strategy recommended --apply
   node ./bin/merge-guard.mjs rollback
